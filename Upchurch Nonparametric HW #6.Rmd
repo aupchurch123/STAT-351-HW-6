@@ -1,0 +1,54 @@
+---
+title: 'Upchurch Nonparametric HW #6'
+author: "Allison Upchurch"
+date: "4/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r first}
+data = read.csv('C:\\Users\\allis\\Downloads\\ill_school_data.csv')
+hist(data$ClassGrade,breaks = 9, xlim=c(4,12))
+summary(data$Ageyears)
+```
+This data set contains a variety of self-reported measurements about US schoolchildren such as their age, favorite subject, time spent online, etc. One interesting aspect of this dataset is that the lowest grade level is 9th grade, but the ages range from 12 to 99 years old, so clearly there are some errors in the age column. 
+```{r second}
+data.1 = data[c(7,29)]
+nrow(data.1)
+data.2 = data.1[!(data.1$Handed == ""), ]
+nrow(data.2)
+data.3 = data.2[!(data.2$Favorite_Season == ""),]
+nrow(data.3)
+nrow(data.3)/500
+```
+Removing all blanks is a reasonable way to deal with missing data in this situation, because 89.8% of the observations are still remaining. 
+``` {r third}
+data.3$Handed = factor(data.3$Handed)
+data.3$Favorite_Season = factor(data.3$Favorite_Season)
+tab = table(data.3$Handed, data.3$Favorite_Season)
+print(tab)
+chisq.test(tab)
+```
+I used the chi-squared test becuase the data isn't paired and the outcome is a qualitative response, so this was the most appropriate non-parametric test. Based on the p-value of 0.7053, we fail to reject the null hypothesis that handedness is independent of favorite season.
+```{r fourth}
+library(mice)
+dat = data[c(4,6,8,9,10)]
+dat = dat[-c(7),]
+dat[dat == ""] = NA
+dat.2 = mice(dat, m=5, method = 'cart', seed = 123)
+fit = with(data = dat.2, exp = lm(as.numeric(Height_cm) ~ as.numeric(Armspan_cm)))
+summary(pool(fit))
+```
+The final estimate for the Armspan predictor is 0.4523 with a standard error of 0.0405, and the estimate for the intercept is 33.746 with a standard error of 2.685
+```{r fifth}
+library(mice)
+dat$Height_cm = as.numeric(dat$Height_cm)
+dat$Footlength_cm = as.numeric(dat$Footlength_cm)
+dat$Armspan_cm = as.numeric(dat$Armspan_cm)
+dat.3 = mice(dat, m=5, method = 'rf', seed = 123)
+fit = with(data = dat.3, exp = lm(as.numeric(Height_cm) ~ as.numeric(Armspan_cm)))
+summary(pool(fit))
+```
+The estimate for the intercept is 33.093 with a standard error of 2.666, and the estimate for the Armspan is 0.463 with a standard error 0.0385
